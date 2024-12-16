@@ -5,6 +5,7 @@ import time
 import threading
 import os
 import subprocess
+import webbrowser
 
 # إعداد مكتبة pygame للصوت
 pygame.mixer.init()
@@ -59,13 +60,37 @@ def play_audio_and_execute_associated_file(key):
             move_mouth(False)
             time.sleep(0.1)
 
-        # تشغيل الملف المرتبط بعد انتهاء الصوت
-        associated_file = f"{key}.ppsx"
-        if os.path.exists(associated_file):
-            print(f"تشغيل الملف المرتبط: {associated_file}")
-            subprocess.Popen([associated_file], shell=True)
+        # البحث عن ملف مرتبط مع المفتاح بأي امتداد
+        supported_extensions = [
+            # امتدادات الصور
+            '.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff',
+            # ملفات HTML
+            '.html', '.htm',
+            # ملفات Microsoft Office
+            '.doc', '.docx',  # Word
+            '.xls', '.xlsx',  # Excel
+            '.ppt', '.pptx', '.ppsx',  # PowerPoint
+            # ملفات نصية وPDF
+            '.txt', '.pdf',
+            # ملفات فيديو
+            '.mp4', '.avi', '.mov', '.mkv',
+            # برامج تنفيذية
+            '.exe', '.bat'
+        ]
+
+        # محاولة تشغيل أول ملف مرتبط بالمفتاح
+        for ext in supported_extensions:
+            associated_file = f"{key}{ext}"
+            if os.path.exists(associated_file):
+                if ext in ['.html', '.htm']:  # فتح ملفات HTML باستخدام المتصفح الافتراضي
+                    print(f"فتح ملف HTML: {associated_file}")
+                    webbrowser.open(associated_file)
+                else:  # فتح الملفات الأخرى باستخدام النظام
+                    print(f"تشغيل الملف المرتبط: {associated_file}")
+                    subprocess.Popen([associated_file], shell=True)
+                break
         else:
-            print(f"لا يوجد ملف مرتبط باسم {associated_file}.")
+            print(f"لا يوجد ملف مرتبط بالمفتاح {key}.")
 
     except pygame.error as e:
         print(f"خطأ في تشغيل الملف الصوتي: {e}")
@@ -85,4 +110,3 @@ root.bind('<KeyPress>', on_key_press)
 
 # تشغيل الواجهة الرسومية
 root.mainloop()
-  
