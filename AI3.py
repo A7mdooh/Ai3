@@ -38,8 +38,25 @@ def move_mouth(is_open):
         canvas.coords(mouth, screen_width * 0.3, screen_height * 0.6, screen_width * 0.7, screen_height * 0.6)  # غلق الفم
     root.update()
 
-# دالة لتشغيل الصوت والملف المرتبط
-def play_audio_and_execute_associated_file(key):
+# دالة لتحميل الروابط من ملف خارجي
+def load_urls():
+    urls = {}
+    if os.path.exists("urls.txt"):  # التحقق من وجود الملف
+        with open("urls.txt", "r") as file:
+            for line in file:
+                line = line.strip()
+                if ',' in line:
+                    key, url = line.split(',', 1)
+                    urls[key] = url
+    else:
+        print("ملف urls.txt غير موجود. تأكد من إنشاء الملف وإضافة الروابط.")
+    return urls
+
+# تحميل الروابط من الملف
+key_to_url = load_urls()
+
+# دالة لتشغيل الصوت وفتح صفحة ويب مرتبطة
+def play_audio_and_open_webpage(key):
     try:
         # توليد اسم الملف الصوتي
         audio_file = f"{key}.mp3"
@@ -60,42 +77,22 @@ def play_audio_and_execute_associated_file(key):
             move_mouth(False)
             time.sleep(0.1)
 
-        # البحث عن ملف مرتبط مع المفتاح بأي امتداد
-        supported_extensions = [
-            # امتدادات الصور
-            '.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff',
-            # ملفات HTML
-            '.html', '.htm',
-            # ملفات Microsoft Office
-            '.doc', '.docx',  # Word
-            '.xls', '.xlsx',  # Excel
-            '.ppt', '.pptx', '.ppsx',  # PowerPoint
-            # ملفات نصية وPDF
-            '.txt', '.pdf',
-            # ملفات فيديو
-            '.mp4', '.avi', '.mov', '.mkv',
-            # برامج تنفيذية
-            '.exe', '.bat'
-        ]
-
-        # محاولة تشغيل أول ملف مرتبط بالمفتاح
-        for ext in supported_extensions:
-            associated_file = f"{key}{ext}"
-            if os.path.exists(associated_file):
-                if ext in ['.html', '.htm']:  # فتح ملفات HTML باستخدام المتصفح الافتراضي
-                    print(f"فتح ملف HTML: {associated_file}")
-                    webbrowser.open(associated_file)
-                else:  # فتح الملفات الأخرى باستخدام النظام
-                    print(f"تشغيل الملف المرتبط: {associated_file}")
-                    subprocess.Popen([associated_file], shell=True)
-                break
+        # فتح صفحة ويب مرتبطة
+        if key in key_to_url:
+            url = key_to_url[key]
+            print(f"فتح الرابط: {url}")
+            try:
+                # تحديد متصفح يدويًا (اختياري)
+                webbrowser.get("chrome").open(url)  # استبدل بـ "firefox" أو المتصفح المناسب
+            except webbrowser.Error:
+                webbrowser.open(url)  # إذا فشل التحديد، استخدم المتصفح الافتراضي
         else:
-            print(f"لا يوجد ملف مرتبط بالمفتاح {key}.")
+            print(f"لا يوجد رابط مرتبط بالمفتاح {key}.")
 
     except pygame.error as e:
         print(f"خطأ في تشغيل الملف الصوتي: {e}")
     except Exception as e:
-        print(f"خطأ أثناء تشغيل الملف المرتبط: {e}")
+        print(f"خطأ أثناء فتح الرابط: {e}")
 
 # دالة للتعامل مع ضغطات لوحة المفاتيح
 def on_key_press(event):
@@ -103,7 +100,7 @@ def on_key_press(event):
     if key == 'q':  # إنهاء البرنامج عند الضغط على Q
         root.quit()
     else:
-        threading.Thread(target=play_audio_and_execute_associated_file, args=(key,)).start()
+        threading.Thread(target=play_audio_and_open_webpage, args=(key,)).start()
 
 # ربط النافذة مع دالة الاستماع لضغطات المفاتيح
 root.bind('<KeyPress>', on_key_press)
